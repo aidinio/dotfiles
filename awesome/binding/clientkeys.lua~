@@ -1,0 +1,67 @@
+-- Standars Awesome library
+pcall(require, "luarocks.loader")
+local gears = require("gears")
+local awful = require("awful")
+local naughty = require("naughty")
+local math = require("math")
+local os = require("os")
+
+local _M = {}
+local modkey = RC.vars.modkey
+
+function _M.get()
+	local clientkeys = gears.table.join(
+		awful.key({ modkey, }, "f",
+			function(c)
+				c.fullscreen = not c.fullscreen
+				-- c.fullscreen = false
+				c:raise()
+			end,
+			{ description = "toggle fullscreen", group = "client" }),
+		awful.key({ modkey, "Shift" }, "c", function(c) c:kill() end,
+		   { description = "close", group = "client" }),
+
+		awful.key({ modkey, "Control" }, "space",
+			function(c)
+				c.floating = not c.floating
+				awful.placement.no_offscreen(c)
+			end,
+			{ description = "toggle floating", group = "client" }),
+		awful.key({ modkey, "Control" }, "Return", function(c) c:swap(awful.client.getmaster()) end,
+			{ description = "move to master", group = "client" }),
+		awful.key({ modkey, }, "o", function(c) c:move_to_screen() end,
+			{ description = "move to screen", group = "client" }),
+		awful.key({ modkey, }, "t", function(c) c.ontop = not c.ontop end,
+			{ description = "toggle keep on top", group = "client" }),
+		awful.key({ modkey, }, "m",
+			function(c)
+				c.maximized = not c.maximized
+				c:raise()
+			end,
+			{ description = "(un)maximize", group = "client" }),
+		awful.key({ modkey, }, "u", function (c)			  c.sticky = not c.sticky
+			  naughty.notify {title = c.name, text = "Toggled the sticky"}
+		end,
+		   { description = "toggle sticky", group = "client" }),
+		awful.key({modkey, }, "a", function (c)
+			  const = c.x
+			  function animate (c, s, f, d, const)
+				 c.x = c.x + s
+				 c.y = c.y + f(c.x + s - const)
+				 naughty.notify {title = '(' .. c.x .. ' ' .. c.y .. ')'}
+				 os.execute('sleep ' .. tostring(const))
+			  end
+			  function func(x)
+				 return 5 * math.sin(x)
+			  end
+			  naughty.notify {title = '(' .. c.x .. ' ' .. c.y .. ')'}
+			  for i=1, 10 do
+				 animate(c, 5, func, 1, const)
+			  end
+		end),
+		{ description = "animate window", group = "client"}
+	)
+	return clientkeys
+end
+
+return setmetatable({}, { __call = function(_, ...) return _M.get(...) end })

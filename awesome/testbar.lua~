@@ -1,0 +1,284 @@
+local awful = require("awful")
+local wibox = require("wibox")
+local gears = require("gears")
+local naughty = require("naughty")
+
+function control_button(icon_path, icon_color, widget_color, icon_margin_top, widget_margin_top, widget_margin_left)
+	return {
+		{
+			{
+				{
+					{
+						image = gears.color.recolor_image(icon_path, icon_color),
+						resize = true,
+						widget = wibox.widget.imagebox,
+						forced_width = 35,
+						forced_height = 35,
+					},
+					widget = wibox.container.margin,
+					top = icon_margin_top,
+					left = 21,
+				},
+				layout = wibox.layout.fixed.horizontal,
+			},
+			bg = widget_color,
+			fg = "#ff0000",
+			widget = wibox.container.background,
+			forced_height = 76,
+			forced_width = 76,
+			shape = function(cr, width, height)
+				gears.shape.rounded_rect(cr, 76, 76, 100)
+			end,
+		},
+		widget = wibox.container.margin,
+		top = widget_margin_top,
+		left = widget_margin_left,
+	}
+end
+
+bar = awful.wibar { position = "top", height = 40, bg = "#2E344010" }
+
+wtime = wibox.widget {
+	markup = "<span foreground='#ECF3FF'>19:58 Sun Aug 27</span>",
+	font = "Roboto 12",
+	widget = wibox.widget.textbox,
+}
+wtime = wibox.container.margin(wtime, 20)
+wpanel = wibox.widget {
+	layout = wibox.layout.align.horizontal,
+	align = "right"
+}
+
+icon_path = "/home/aidin/.config/awesome/icon.svg"
+final = gears.color.recolor_image(icon_path, "#c6e7fc")
+wicon = wibox.widget {
+	image = final,
+	widget = wibox.widget.imagebox,
+}
+wicon = wibox.container.margin(wicon, 0, 20)
+wpanel.first = wtime
+wpanel.third = wicon
+wpanel = wibox.container.background(wpanel, "#000")
+screen_width = bar.width
+wpanel.forced_width = screen_width / 6
+wpanel.shape = function(cr, width, height)
+	gears.shape.rounded_rect(cr, width, height, 15)
+end
+wpanel = wibox.container.margin(wpanel, 0, 20)
+
+bar:setup {
+	nil,
+	nil,
+	wpanel,
+	layout = wibox.layout.align.horizontal
+}
+
+a = awful.popup {
+	widget = {
+		{
+			{
+				markup = "<b>HI!!!!!!!!!</b>",
+				widget = wibox.widget.textbox
+			},
+			{
+				markup = "<b>HI!!!!!!!!!</b>",
+				widget = wibox.widget.textbox
+			},
+			layout = wibox.layout.fixed.horizontal
+		},
+		layout = wibox.layout.fixed.vertical,
+		widget = wibox.container.background,
+		forced_width = screen_width / 6,
+		forced_height = screen_width / 3,
+	},
+	bg = "#000000",
+	shape = function(cr, width, height)
+		gears.shape.rounded_rect(cr, width, height, 30)
+	end,
+	visible = false,
+	ontop = true,
+	placement = function(cr)
+		awful.placement.top_right(cr, { margins = { top = 0, right = 20 } })
+	end,
+}
+
+a = awful.popup {
+	widget = {
+		{
+			{ -- Start of time section
+				{
+					{
+						{
+							{
+								markup = "19:58",
+								font = "Roboto Medium 24",
+								widget = wibox.widget.textbox,
+							},
+							{
+								{
+									{
+										markup = "October",
+										font = "Roboto Bold 15",
+										widget = wibox.widget.textbox,
+									},
+									{
+										{
+											markup = "Friday",
+											font = "Roboto Bold 15",
+											widget = wibox.widget.textbox,
+										},
+										widget = wibox.container.margin,
+										top = -7
+									},
+									layout = wibox.layout.fixed.vertical
+								},
+								widget = wibox.container.margin,
+								top = 18,
+								left = 8
+							},
+							{
+								{
+									markup = "12/10/2023",
+									font = "Roboto Bold 15",
+									widget = wibox.widget.textbox,
+								},
+								widget = wibox.container.margin,
+								left = 200,
+							},
+							layout = wibox.layout.fixed.horizontal,
+							--fill_space = false,
+							forced_width = 600,
+						},
+						widget = wibox.container.margin,
+						left = 20,
+					}, -- End of time widgets
+					bg = "#15191C",
+					fg = "#ECF3FF",
+					widget = wibox.container.background,
+					forced_height = 100,
+					shape = function(cr, width, height)
+						gears.shape.rounded_rect(cr, screen_width / 6 * 0.9, 100, 20)
+					end,
+				},
+				top = 40,
+				left = 30,
+				right = 0,
+				widget = wibox.container.margin,
+			}, -- End of time section
+			{ -- Beginning of the buttons and controllers section
+				{ -- wifi, bluetooth, etc. buttons section
+					{
+						{
+							{ -- first row
+								control_button("/home/aidin/Downloads/wifi-solid.svg", "#000000", "#C6E7FC", 23, 20, 20),
+								control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 20, 30),
+								layout = wibox.layout.fixed.horizontal,
+							},
+							{
+								control_button("/home/aidin/Downloads/wifi-solid.svg", "#000000", "#C6E7FC", 23, 25, 20),
+								control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+								layout = wibox.layout.fixed.horizontal
+							},
+							{ -- third row
+								control_button("/home/aidin/Downloads/wifi-solid.svg", "#000000", "#C6E7FC", 23, 25, 20),
+								control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+								layout = wibox.layout.fixed.horizontal
+							},
+							layout = wibox.layout.fixed.vertical
+						},
+						bg = "#15191C",
+						widget = wibox.container.background,
+						forced_height = 315,
+						forced_width = screen_width / 6 * 0.9 * 0.39,
+						shape = function(cr, width, height)
+							gears.shape.rounded_rect(cr, screen_width / 6 * 0.9 * 0.39, 315, 20)
+						end,
+					},
+					widget = wibox.container.margin,
+					top = 30,
+					left = 30,
+				},
+				{ --controllers section and session buttons section
+					{
+						{
+							{
+								{
+									control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+									layout = wibox.layout.fixed.horizontal
+								},
+								{
+									control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+									layout = wibox.layout.fixed.horizontal
+								},
+								layout = wibox.layout.fixed.vertical
+							},
+							bg = "#ff0000",
+							widget = wibox.container.background,
+							forced_height = 220,
+							forced_width = screen_width / 6 * 0.9 * 0.55,
+							shape = function(cr, width, height)
+								gears.shape.rounded_rect(cr, screen_width / 6 * 0.9 * 0.55, 220, 20)
+							end,
+						},
+						widget = wibox.container.margin,
+						top = 30,
+						left = 30,
+					},
+					{
+						{
+							{
+								{
+									control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+									layout = wibox.layout.fixed.horizontal
+								},
+								{
+									control_button("/home/aidin/Downloads/bluetooth.svg", "#9A9EA6", "#2E3440", 20, 25, 30),
+									layout = wibox.layout.fixed.horizontal
+								},
+								layout = wibox.layout.fixed.vertical
+							},
+							bg = "#ff0000",
+							widget = wibox.container.background,
+							forced_height = 315,
+							forced_width = screen_width / 6 * 0.9 * 0.55,
+							shape = function(cr, width, height)
+								gears.shape.rounded_rect(cr, screen_width / 6 * 0.9 * 0.55, 220, 20)
+							end,
+						},
+						widget = wibox.container.margin,
+						top = 0,
+						left = 30,
+					},
+					layout = wibox.layout.fixed.vertical,
+				},
+				layout = wibox.layout.fixed.horizontal
+			},
+			layout = wibox.layout.fixed.vertical,
+		},
+		forced_width = screen_width / 6,
+		forced_height = screen_width / 3,
+		bg = "#000000",
+		widget = wibox.container.background,
+		halign = "center",
+	},
+	shape = function(cr, width, height)
+		gears.shape.rounded_rect(cr, screen_width / 6, screen_width / 3, 30)
+	end,
+	fg = "#93ffa2",
+	visible = true,
+	ontop = true,
+	placement = function(cr)
+		awful.placement.top_right(cr, { margins = { top = 60, right = 20 } })
+	end,
+}
+wpanel:buttons(gears.table.join(
+	awful.button({}, 1, function()
+		naughty.notify { title = "CLICKED!" }
+		a.visible = not a.visible
+	end)
+))
+a:buttons(gears.table.join(
+	awful.button({}, 1, function()
+		a.visible = not a.visible
+	end)
+))

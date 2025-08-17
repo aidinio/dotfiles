@@ -1,0 +1,206 @@
+local awful = require("awful")
+local bling = require("bling")
+local wibox = require("wibox")
+local gears = require("gears")
+local lain = require("lain")
+local beautiful = require("beautiful")
+local naughty = require("naughty")
+local _M = {}
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+function _M.get()
+	local tags = {}
+	awful.screen.connect_for_each_screen(function(s)
+		  -- require("awesome-control-center.bar")
+		-- Each screen has its own tag table.
+		tags[s] = awful.tag(
+			{ "", "", "", "", "", "", "", "", "", "" }, s, RC.layouts[1]
+		)
+		bling.module.tiled_wallpaper(".", s, {
+			-- call the actual function ("x" is the string that will be tiled)
+			fg = "#504945",    -- define the foreground color
+			bg = "#1d2021",    -- define the background color
+			offset_y = -15,    -- set a y offset
+			offset_x = -50,    -- set a x offset
+			font = "SF Pro Rounded", -- set the font (without the size)
+			font_size = 60,    -- set the font size
+			padding = 75,      -- set padding (default is 100)
+			zickzack = false   -- rectangular pattern or criss cross
+		})
+		if s.geometry.x == 0 then
+			bling.module.tiled_wallpaper("", s, {
+				-- call the actual function ("x" is the string that will be tiled)
+				fg = "#504945", -- define the foreground color
+				bg = "#2E3440", -- define the background color
+				offset_y = -15, -- set a y offset
+				offset_x = -50, -- set a x offset
+				font = "SF Pro Rounded", -- set the font (without the size)
+				font_size = 60, -- set the font size
+				padding = 75,   -- set padding (default is 100)
+				zickzack = false -- rectangular pattern or criss cross
+			})
+		end
+		-- It's the mod+r prompt box
+		s.mytaglist = awful.widget.taglist {
+			screen          = s,
+			filter          = awful.widget.taglist.filter.all,
+			style           = {
+				shape = gears.shape.powerline
+			},
+			layout          = {
+				spacing        = -12,
+				spacing_widget = {
+					color  = '#ebdbb2',
+					shape  = gears.shape.powerline,
+					widget = wibox.widget.separator,
+				},
+				layout         = wibox.layout.fixed.horizontal
+			},
+			widget_template = {
+				{
+					{
+						{
+							{
+								{
+									id     = 'index_role',
+									widget = wibox.widget.textbox,
+								},
+								margins = 4,
+								widget  = wibox.container.margin,
+							},
+							bg     = '#1d2021',
+							shape  = gears.shape.circle,
+							widget = wibox.container.background,
+						},
+						{
+							{
+								id     = 'icon_role',
+								widget = wibox.widget.imagebox,
+							},
+							margins = 2,
+							widget  = wibox.container.margin,
+						},
+						{
+							id     = 'text_role',
+							widget = wibox.widget.textbox,
+						},
+						layout = wibox.layout.fixed.horizontal,
+					},
+					left   = 18,
+					right  = 18,
+					widget = wibox.container.margin
+				},
+				id              = 'background_role',
+				widget          = wibox.container.background,
+				-- Add support for awbar colors and an index label
+				create_callback = function(self, c3, index, objects) --luacheck: no unused args
+					self:get_children_by_id('index_role')[1].markup = '<b> ' .. index .. ' </b>'
+					self:connect_signal('mouse::enter', function()
+						-- BLING: Only show widget when there are clients in the tag
+						if #c3:clients() > 0 then
+							-- BLING: Update the widget with the new tag
+							awesome.emit_signal("bling::tag_preview::update", c3)
+							-- BLING: Show the widget
+							awesome.emit_signal("bling::tag_preview::visibility", s, true)
+						end
+
+						if self.bg ~= '#ff0000' then
+							self.backup     = self.bg
+							self.has_backup = true
+						end
+						self.bg = '#ff0000'
+						if self.bg ~= '#a89984' then
+							self.backup     = self.bg
+							self.has_backup = true
+						end
+						self.bg = '#a89984'
+					end)
+					self:connect_signal('mouse::leave', function()
+						-- BLING: Turn the widget off
+						awesome.emit_signal("bling::tag_preview::visibility", s, false)
+										   if self.bg ~= "#ebdbb2" then self.bg = "#ffffff00" end
+					end)
+				end,
+				update_callback = function(self, c3, index, objects) --luacheck: no unused args
+					self:get_children_by_id('index_role')[1].markup = '<b> ' .. index .. ' </b>'
+				end,
+			},
+			buttons = RC.taglistbuttons,
+		}
+		s.mypromptbox = awful.widget.prompt()
+		s.mytextclock = wibox.widget.textclock()
+		-- s.mytextclock.align = "center"
+		s.mylayoutbox = awful.widget.layoutbox(s)
+		s.mylayoutbox:buttons(RC.layoutbuttons)
+		local cpu = lain.widget.cpu {
+		   settings = function ()
+			  local st = "overall: " .. cpu_now[0].usage .. "%"
+			  for i=1,12 do
+				 st = st .. " | " .. i .. ': ' .. tostring(cpu_now[i].usage) .. "%"
+			  end
+			  widget:set_markup(st)
+			  --naughty.notify({text = package.path})
+		   end,
+		   -- timeout = 0.1
+		}
+		local volume = lain.widget.alsa {
+			settings = function()
+				widget:set_markup('<b> ' .. volume_now.status .. ' ' .. volume_now.level .. '</b> ')
+			end
+		}
+		volume_bar = lain.widget.alsabar {}
+		mybat = lain.widget.bat {timeout = 1, settings = function ()
+									widget:set_text(bat_now.watt .. ' ' .. bat_now.time .. ' ' .. bat_now.status .. ' ' .. bat_now.perc .. '% ')
+		end }
+		mybat:get_batteries()
+		mybat:update()
+
+		--app_launcher = bling.widget.app_launcher()
+		-- Create the wibox
+		s.mywibox = awful.wibar({ position = "bottom", screen = s })
+		-- Add widgets to the wibox
+		local left_section = wibox.layout.fixed.horizontal(s.mypromptbox, s.mytaglist, mybat.widget)
+		left_section.forced_width = 1200
+		-- left_section.forced_width = 850
+		local expandable_spacer = wibox.container.place(wibox.widget.textbox(""), "center", "center")
+		m1 = wibox.container.margin(s.mytextclock, 950, 100, 0, 0)
+		local middle_section = wibox.layout.align.horizontal(m1)
+		--middle_section:add(expandable_spacer)
+		s.mytextclock.align = "center"
+		middle_section.align = "center"
+		--middle_section.forced_width = 1000
+		-- middle_section:add(expandable_spacer)
+		local right_section = wibox.layout.fixed.horizontal(s.mylayoutbox, volume_bar.bar, volume.widget)
+
+		--right_section.forced_width = 800
+		-- right_section:set_right(s.mylayoutbox)
+		-- right_section:set_middle(volume_bar.bar)
+		-- right_section:set_left(volume.widget)
+		--right_section.x = 900
+
+		s.mywibox:setup {
+		   left_section,
+		   middle_section,
+		   right_section,
+		   layout = wibox.layout.align.horizontal,
+		}
+		-- s.wibox2 = awful.wibar({position = "bottom", screen = s})
+		-- local exp = wibox.container.place(wibox.widget.textbox(""), "center", "center")
+		-- local wi1 = wibox.widget.textbox("111")
+		-- local wi2 = wibox.widget.textbox("222")
+		-- local wi3 = wibox.widget.textbox("333")
+		-- s.wibox2:setup {
+		--    wi1,
+		--    wibox.container.place(wi2, "center", "center"),
+		--    wi3,
+		--    layout = wibox.layout.align.horizontal
+		-- }
+	end)
+
+	return tags
+end
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+return setmetatable({}, { __call = function(_, ...) return _M.get(...) end })

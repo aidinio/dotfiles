@@ -1,0 +1,401 @@
+-- If LuaRocks is installed, make sure that packages installed through it are
+-- found (e.g. lgi). If LuaRocks is not installed, do nothing.
+pcall(require, "luarocks.loader")
+local lain = require("lain")
+
+-- Standard awesome library
+local gears = require("gears")
+local math = require("math")
+local awful = require("awful")
+
+-- Theme handling library
+local beautiful = require("beautiful")
+
+require("awful.autofocus")
+
+-- Widget and layout library
+local wibox = require("wibox")
+
+-- Notification library
+local naughty = require("naughty")
+local hotkeys_popup = require("awful.hotkeys_popup")
+
+local bling = require("bling")
+local rubato = require("rubato") -- animations
+
+RC = {}
+RC.vars = require("main.user-variables")
+modkey = RC.vars.modkey
+-- Enable hotkeys help widget for VIM and other apps
+-- when client with a matching name is opened:
+require("awful.hotkeys_popup.keys")
+require("main.error-handling")
+
+-- {{{ Variable definitions
+-- Themes define colours, icons, font and wallpapers.
+beautiful.init(RC.vars.home .. "/.config/awesome/theme.lua")
+
+require("restore_tags")
+
+-- local anim_y = rubato.timed {
+--     pos = 1090,
+--     rate = 60,
+--     easing = rubato.quadratic,
+--     intro = 0.1,
+--     duration = 0.3,
+--     awestore_compat = true -- This option must be set to true.
+-- }
+
+-- local anim_x = rubato.timed {
+--     pos = -970,
+--     rate = 60,
+--     easing = rubato.quadratic,
+--     intro = 0.1,
+--     duration = 0.3,
+--     awestore_compat = true -- This option must be set to true.
+-- }
+
+-- term_scratch = bling.module.scratchpad {
+--     command = "alacritty --class spad",           -- How to spawn the scratchpad
+--     rule = { instance = "spad" },                     -- The rule that the scratchpad will be searched by
+--     sticky = true,                                    -- Whether the scratchpad should be sticky
+--     autoclose = true,                                 -- Whether it should hide itself when losing focus
+--     floating = true,                                  -- Whether it should be floating (MUST BE TRUE FOR ANIMATIONS)
+--     geometry = {x=360, y=90, height=900, width=1200}, -- The geometry in a floating state
+--     reapply = true,                                   -- Whether all those properties should be reapplied on every new opening of the scratchpad (MUST BE TRUE FOR ANIMATIONS)
+--     dont_focus_before_close  = false,                 -- When set to true, the scratchpad will be closed by the toggle function regardless of whether its focused or not. When set to false, the toggle function will first bring the scratchpad into focus and only close it on a second call
+--     rubato = {x = anim_x, y = anim_y}                 -- Optional. This is how you can pass in the rubato tables for animations. If you don't want animations, you can ignore this option.
+-- }
+--term_scratch:connect_signal("toggle", function(c) naughty.notify({title = "Scratchpad toggled!"}) end)
+-- Custom Local Library: Keys and Mouse Binding
+
+local binding = {
+   globalbuttons = require("binding.globalbuttons"),
+   clientbuttons = require("binding.clientbuttons"),
+   globalkeys = require("binding.globalkeys"),
+   bindtotags = require("binding.bindtotags"),
+   clientkeys = require("binding.clientkeys"),
+   layoutbuttons = require("binding.layoutbuttons"),
+   taglistbuttons = require("binding.taglistbuttons")
+}
+-- bling.module.window_swallowing.start()  -- activates window swallowing
+RC.layoutbuttons = binding.layoutbuttons()
+RC.taglistbuttons = binding.taglistbuttons()
+RC.globalbuttons = binding.globalbuttons()
+RC.globalkeys = binding.globalkeys()
+RC.globalkeys = binding.bindtotags(RC.globalkeys)
+
+local main = {
+   layouts = require("main.layouts"),
+   tags = require("main.tags"),
+   rules = require("main.rules")
+}
+RC.layouts = main.layouts()
+RC.tags = main.tags()
+client.connect_signal("manage", function(c)
+   -- Set the windows at the slave,
+   -- i.e. put it at the end of others instead of setting it master.
+   -- if not awesome.startup then awful.client.setslave(c) end
+
+   if awesome.startup
+       and not c.size_hints.user_position
+       and not c.size_hints.program_position then
+      -- Prevent clients from being unreachable after screen count changes.
+      awful.placement.no_offscreen(c)
+   end
+end)
+
+-- -- Add a titlebar if titlebars_enabled is set to true in the rules.
+-- client.connect_signal("request::titlebars", function(c)
+--     -- buttons for the titlebar
+--     local buttons = gears.table.join(
+--         awful.button({ }, 1, function()
+--             c:emit_signal("request::activate", "titlebar", {raise = true})
+--             awful.mouse.client.move(c)
+--         end),
+--         awful.button({ }, 3, function()
+--             c:emit_signal("request::activate", "titlebar", {raise = true})
+--             awful.mouse.client.resize(c)
+--         end)
+--     )
+-- 	bling.widget.tabbed_misc.titlebar_indicator(client, {
+--     widget_template = {
+--         {
+--             widget = awful.widget.clienticon,
+--             id = 'icon_role'
+--         },
+--         widget = wibox.container.margin,
+--         margins = 2,
+--         id = 'bg_role',
+--         update_callback = function(self, client, group)
+--             if client == group.clients[group.focused_idx] then
+--                 self.margins = 5
+--             end
+--         end
+--     }
+-- })
+--     awful.titlebar(c) : setup {
+--         { -- Left
+--             awful.titlebar.widget.iconwidget(c),
+--             buttons = buttons,
+--             layout  = wibox.layout.fixed.horizontal
+--         },
+--         { -- Middle
+--             { -- Title
+--                 align  = "center",
+--                 widget = awful.titlebar.widget.titlewidget(c)
+--             },
+--             buttons = buttons,
+--             layout  = wibox.layout.flex.horizontal
+--         },
+--         { -- Right
+--             awful.titlebar.widget.floatingbutton (c),
+--             awful.titlebar.widget.maximizedbutton(c),
+--             awful.titlebar.widget.stickybutton   (c),
+--             awful.titlebar.widget.ontopbutton    (c),
+--             awful.titlebar.widget.closebutton    (c),
+--             layout = wibox.layout.fixed.horizontal()
+--         },
+--         layout = wibox.layout.align.horizontal
+--     }awful.titlebar(c).widget = {
+--         { -- Left
+--             bling.widget.tabbed_misc.titlebar_indicator(c),
+--             layout  = wibox.layout.fixed.horizontal
+--         },
+--         { -- Middle
+--             { -- Title
+--                 align  = "center",
+--                 widget = awful.titlebar.widget.titlewidget(c)
+--             },
+--             buttons = buttons,
+--             layout  = wibox.layout.flex.horizontal
+--         },
+--         { -- Right
+--             awful.titlebar.widget.maximizedbutton(c),
+--             awful.titlebar.widget.closebutton    (c),
+--             layout = wibox.layout.fixed.horizontal
+--         },
+--         layout = wibox.layout.align.horizontal
+--     }
+-- end)
+
+-- limit available layoust
+awful.layout.layouts = RC.layouts
+root.buttons(binding.globalbuttons)
+root.keys(RC.globalkeys)
+
+awful.rules.rules = main.rules(
+   binding.clientkeys(),
+   binding.clientbuttons()
+)
+
+-- wbh1 = awful.wibar { position = "bottom", bg = "#282828", height = 400, shape = gears.shape.rounded_bar}
+
+-- wbv1 = awful.wibar { position = "left", bg = "#d3869b", width = 75}
+-- function wid (text, fontsize, settings)
+--    ret = wibox.widget {
+-- 	  markup = string.format("<b><span foreground='#ebdbb2' background='#cc241d'>%s</span></b>", text),
+-- 	  font = string.format("monospace %d", fontsize),
+-- 	  --spacing = 100,
+
+-- 	  widget = wibox.widget.textbox,
+-- 	  --forced_width = 500,
+-- 	  wrap = "char",
+-- 	  valign = "center",
+-- 	  align = "center",
+--    }
+--    return ret
+-- end
+
+-- wh1 = wid("This is textbox 1", 20)
+-- wh2 = wid("This is textbox 2", 20)
+-- wh3 = wid("This is textbox 3", 20)
+-- wh4 = wid("This is textbox 4", 20)
+-- wh1.align = "left"
+-- wh2.align = "center"
+-- wh3.align = "right"
+-- wv1 = wid("Text1", 10)
+-- wv2 = {
+--    widget = wibox.widget.imagebox,
+--    image = gears.shape.rounded_bar(cr, 70, 70)
+-- }
+-- -- wh1.horizontal_offset = 1000
+-- --sh1 = wibox.wid
+-- -- wh1.spacing = 10
+
+-- local l = wibox.widget {
+--    homogeneous = true,
+--    spacing = 5,
+--    min_cols_size = 7,
+--    min_row_size = 5,
+--    horizontal_expand = true,
+--    vertical_expand = true,
+--    extand = true,
+--    layout = wibox.layout.grid,
+-- }
+
+-- wh1.point = {x = 1500, y = 100}
+-- -- wh1.forced_width = 500
+-- -- wh1.forced_height = 500
+-- wh2.point = {}
+-- wh2.point.x = 2500
+-- wh2.point.y = 150
+-- -- wh2.forced_width = 400
+-- -- wh2.forced_height = 300
+-- wh1.align = "center"
+-- l1 = wibox.container.background(wh1, "#689d6a")
+-- l1.point = {x = 3000, y = 200}
+-- l1.forced_width = 400
+-- l1.forced_height = 100
+-- -- wh1.text = "KLDSJFKLSJD"
+-- -- l = wibox.layout {
+-- --    layout = wibox.layout.manual
+-- -- }
+-- l1.point = { x = 100, y = 100 }
+-- manlayout = wibox.layout {
+--    layout = wibox.layout.manual
+-- }
+-- manlayout:add(l1)
+-- manlayout:add(wh1)
+-- manlayout:add(wh2)
+
+-- local corner_radius = 40
+-- my_shape = function(cr, width, height)
+--    gears.shape.rounded_rect(cr, width, height, corner_radius)
+--    end
+
+-- local my_widget = wibox.widget {
+--     {
+--         markup   = "<b>Hello, World!</b>",
+--         widget = wibox.widget.textbox,
+-- 		align = "center",
+-- 		font = "Monospace 20",
+-- 		opacity = 1
+--     },
+--     bg                 = "#689d6a", -- Change to any color you like
+--     shape              = my_shape,
+--     shape_border_color = "#ebdbb2",
+--     shape_border_width = 2,
+--     widget             = wibox.container.background,
+-- 	opacity = 0.7,
+-- 	forced_width = 350,
+-- 	forced_height = 100
+-- }
+-- my_widget.point = {x = 400, y = 150}
+
+-- local my_widget2 = wibox.widget.textbox("<b>Hello, Awesome!</b>")
+-- my_widget2.font = "Roboto Mono Nerd Font 20"
+-- local with_background = wibox.container.background(my_widget2, "#689d6a") -- Red background
+-- local with_margins = wibox.container.margin(with_background, 0, 0, 0, 0) -- 10px margins
+-- local rotated = wibox.container.rotate(with_margins, "east")
+-- rotated.point = {x = 1700, y = 70}
+-- manlayout:add(my_widget)
+-- manlayout:add(rotated)
+
+
+-- wbh1:setup {
+--    --layout = wibox.layout.flex.horizontal,
+--    layout = wibox.layout.fixed.horizontal,
+--    manlayout
+--    --wh4,
+-- }
+
+-- wbv1:setup {
+--    layout = wibox.layout.fixed.vertical,
+--    wv1, wv1, wv1,
+-- }
+
+-- function anim(widg, layout)
+--    widg.x0 = widg.x0 or widg.point.x
+--    widg.y0 = widg.y0 or widg.point.y
+--    widg.w0 = widg.w0 or widg.forced_width
+--    widg.h0 = widg.h0 or widg.forced_height
+--    widg.t = widg.t or 0
+--    widg.point.x = widg.x0 + 30 * math.cos(widg.t)
+--    widg.point.y = widg.y0 + 30 * math.sin(widg.t)
+--    layout:move_widget(widg, {x = widg.point.x, y = widg.point.y})
+--    -- layout:move_widget(widg, awful.placement.bottom_right)
+--    --naughty.notify{title = widg.point.x}
+--    -- widg.forced_width = 30 * math.sin(math.abs((widg.w0 or 0) + 2 * widg.t)) + 400
+--    -- widg.forced_height = 30 * math.sin(math.abs((widg.h0 or 0) + 3 * widg.t)) + 200
+--    widg.t = widg.t + 0.05
+-- end
+
+
+-- mytimer2 = gears.timer {
+--    timeout = 0.03,
+--    call_now = true,
+--    autostart = true,
+--    callback = function ()
+-- 	  anim(wh1, manlayout)
+-- 	  end
+-- }
+
+-- mytimer3 = gears.timer {
+--    timeout = 0.03,
+--    call_now = true,
+--    autostart = true,
+--    callback = function ()
+-- 	  anim(wh2, manlayout)
+-- 	  end
+-- }
+
+-- mytimer1 = gears.timer {
+--    timeout = 0.03,
+--    call_now = true,
+--    autostart = true,
+--    callback = function ()
+-- 	  anim(l1, manlayout)
+-- 	  end
+-- }
+
+
+-- spacing = 10,
+-- fill_space = "inside",
+-- spacing_widget = wv1,
+-- horizontal_offset = 1050,
+-- wh1,
+-- {
+-- 	  wh2,
+-- 	  layout = wibox.layout.flex.horizontal
+-- },
+-- wh3, wh1, wh2, wh3
+--fill_space = true,
+-- }
+-- disable screen blackening
+
+desired_screen = 1
+
+panel_widget = require("awbar")
+panel_widget = panel_widget {
+   theme = "nord_m",
+   screen = desired_screen
+}
+
+awful.screen.connect_for_each_screen(function(s)
+   if s.index == desired_screen then
+      testing = awful.wibar { position = "top", bg = "#2E344000", height = 39, screen = desired_screen,
+         width = s.geometry.width - 20, ontop = false, type = "toolbar" } --, y = s.workarea.y + 10 }
+      testing:setup {
+         nil,
+         nil,
+         panel_widget,
+         layout = wibox.layout.align.horizontal,
+      }
+      awful.placement.top(testing, { margins = { top = 10 } })
+      --testing:geometry { y = s.workarea.y - 30 }
+      s.padding = { top = 20, left = 10, right = 10, bottom = 10 }
+      --s.padding = {top = 0, bottom = 0}
+      --testing:geometry({ y = 10 })
+   end
+end)
+awful.spawn.with_shell("xset -dpms; xset s off")
+-- awful.spawn.with_shell("killall xcompmgr")
+awful.spawn.with_shell("killall xcompmgr; xcompmgr -f -O 0.08 -I 0.08 -D 0.5")
+awful.spawn.with_shell("emacs --daemon")
+require("main.signals")
+local dbus = dbus
+naughty.notify { title = "HIHIHI!" }
+dbus.connect_signal("org.freedesktop.NetworkManager", function()
+   naughty.notify { title = "HIHIHI!" }
+end)
